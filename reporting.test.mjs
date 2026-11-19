@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { spawnSync } from "node:child_process";
 import { readFileSync } from "node:fs";
 import test from "node:test";
 import { completedWeeks, reportQuery, sheetRow } from "./examples/reporting.mjs";
@@ -89,4 +90,31 @@ test("Postman examples use only report reads, empty access values, and UTC dates
   script({ variables: { set: (key, value) => values.set(key, value), get: (key) => values.get(key) } });
   assert.equal(values.size, 4);
   assert.ok([...values.values()].every((value) => /^\d{4}-\d{2}-\d{2}$/.test(value)));
+});
+
+test("the runnable TypeScript quickstart follows a project cursor", () => {
+  const preload = `
+    globalThis.fetch = async (url, options) => {
+      const request = new URL(url);
+      if (request.origin !== "https://app.ansvra.com" ||
+          request.pathname !== "/api/customer/v1/projects" ||
+          options.headers.Authorization !== "Bearer example-key") {
+        throw new Error("Unexpected project request");
+      }
+      const cursor = request.searchParams.get("cursor");
+      if (cursor && cursor !== "page+two") throw new Error("Cursor was not preserved");
+      return Response.json({
+        data: [{ id: cursor ? "project_two" : "project_one", name: "Northwind Lanterns" }],
+        pagination: { hasMore: !cursor, nextCursor: cursor ? null : "page+two" },
+        meta: { resultScope: "saved" },
+      });
+    };
+  `;
+  const execution = spawnSync(process.execPath, [
+    `--import=data:text/javascript,${encodeURIComponent(preload)}`, "examples/weekly.mts",
+  ], { cwd: new URL(".", import.meta.url), env: { ...process.env, ANSVRA_ACCESS_KEY: "example-key" },
+    encoding: "utf8", timeout: 5000 });
+  assert.equal(execution.status, 0, execution.stderr);
+  assert.deepEqual(execution.stdout.trim().split("\n").map((line) => JSON.parse(line).id),
+    ["project_one", "project_two"]);
 });
