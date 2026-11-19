@@ -1,0 +1,295 @@
+{
+  "name": "Create a weekly AI visibility report in Google Sheets with Ansvra",
+  "nodes": [
+    {
+      "id": "00000000-0000-4000-8000-000000000001",
+      "name": "Manual run",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {}
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000002",
+      "name": "Monday schedule",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        0,
+        160
+      ],
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "weeks",
+              "weeksInterval": 1,
+              "triggerAtDay": [
+                1
+              ],
+              "triggerAtHour": 9
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000003",
+      "name": "Set project and sheet",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        220,
+        80
+      ],
+      "parameters": {
+        "jsCode": "const config = {\n  projectId: \"\",\n  spreadsheetId: \"\",\n  sheetName: \"AI visibility\",\n  platforms: \"\",\n};\nif (!config.projectId.trim() || !config.spreadsheetId.trim()) {\n  throw new Error(\"Set your Ansvra project ID and Google spreadsheet ID.\");\n}\nreturn [{ json: config }];"
+      }
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000004",
+      "name": "Read Ansvra project",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        440,
+        80
+      ],
+      "parameters": {
+        "url": "={{ 'https://app.ansvra.com/api/customer/v1' + '/projects/' + encodeURIComponent($json.projectId) }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": {
+          "redirect": {
+            "redirect": {
+              "followRedirects": false
+            }
+          },
+          "timeout": 30000
+        }
+      }
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000005",
+      "name": "Prepare two completed weeks",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        660,
+        80
+      ],
+      "parameters": {
+        "jsCode": "\nfunction completedWeeks(now = new Date()) {\n  const day = 86_400_000;\n  const midnight = Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate());\n  const monday = midnight - ((now.getUTCDay() + 6) % 7) * day;\n  const date = (offset) => new Date(monday + offset * day).toISOString().slice(0, 10);\n  return [\n    { from: date(-14), to: date(-8) },\n    { from: date(-7), to: date(-1) },\n  ];\n}\nfunction reportQuery(config, period, kind) {\n  const query = Object.entries({ ...period, market: config.market, language: config.language, promptType: \"all\" });\n  const platforms = [...new Set(config.platforms.split(\",\").map((value) => value.trim()).filter(Boolean))].sort();\n  if (kind === \"citations\") {\n    for (const platform of platforms) query.push([\"platform\", platform]);\n    query.push([\"view\", \"pages\"]);\n  } else if (platforms.length) {\n    query.push([\"platforms\", platforms.join(\",\")]);\n  }\n  return query.map(([key, value]) => `${key}=${encodeURIComponent(value)}`).join(\"&\");\n}\nconst project = $input.first().json;\nconst settings = $(\"Set project and sheet\").first().json;\nif (project.meta?.resultScope !== \"saved\" || project.data?.id !== settings.projectId) {\n  throw new Error(\"The API did not return the selected saved project.\");\n}\nconst config = { ...settings, market: project.data.market, language: project.data.language };\nreturn completedWeeks().map((period) => ({\n  json: {\n    config, period, path: \"/projects/\" + encodeURIComponent(config.projectId),\n    overviewQuery: reportQuery(config, period, \"overview\"),\n    citationQuery: reportQuery(config, period, \"citations\"),\n  }, pairedItem: { item: 0 },\n}));"
+      }
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000006",
+      "name": "Read visibility overview",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        880,
+        80
+      ],
+      "parameters": {
+        "url": "={{ 'https://app.ansvra.com/api/customer/v1' + $json.path + '/reports/overview?' + $json.overviewQuery }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": {
+          "redirect": {
+            "redirect": {
+              "followRedirects": false
+            }
+          },
+          "timeout": 30000
+        }
+      }
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000007",
+      "name": "Read cited pages",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1100,
+        80
+      ],
+      "parameters": {
+        "url": "={{ 'https://app.ansvra.com/api/customer/v1' + $('Prepare two completed weeks').item.json.path + '/reports/citations?' + $('Prepare two completed weeks').item.json.citationQuery }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": {
+          "redirect": {
+            "redirect": {
+              "followRedirects": false
+            }
+          },
+          "timeout": 30000
+        }
+      }
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000008",
+      "name": "Format weekly rows",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1320,
+        80
+      ],
+      "parameters": {
+        "jsCode": "\nfunction sheetRow(config, period, overview, citations) {\n  const scope = overview.scope;\n  const citationScope = citations.scope;\n  if (!scope || !citationScope) throw new Error(\"A report is missing its resolved scope.\");\n  const platforms = [...new Set(config.platforms.split(\",\").map((value) => value.trim()).filter(Boolean))].sort();\n  const samePlatforms = (value) => Array.isArray(value) &&\n    JSON.stringify([...value].sort()) === JSON.stringify(platforms);\n  if ([scope, citationScope].some((value) => value.market !== config.market ||\n    value.language !== config.language || value.timezone !== \"UTC\" ||\n    value.promptType !== \"all\" || !samePlatforms(value.platforms))) {\n    throw new Error(\"Resolved filters differ from the requested reporting scope.\");\n  }\n  const fullPeriod = !scope.historyUnavailable && !citationScope.historyUnavailable &&\n    scope.start === period.from && scope.end === period.to &&\n    citationScope.from === period.from && citationScope.to === period.to;\n  const own = overview.brands?.find((brand) => brand.own);\n  const status = !fullPeriod ? \"Partial or unavailable date range\"\n    : !overview.usable ? \"No usable answers\"\n    : overview.usable !== citations.summary?.usable ? \"Report answer counts differ\"\n    : (overview.diagnostics ?? 0) > 0 ? \"Usable answers with diagnostics\"\n    : \"Usable answers available\";\n  return {\n    report_key: JSON.stringify([config.projectId, config.market, config.language, platforms, \"all\", period.from]),\n    project_id: config.projectId,\n    week_from_utc: period.from,\n    week_to_utc: period.to,\n    market: config.market,\n    language: config.language,\n    platforms: platforms.join(\",\") || \"all\",\n    coverage: status,\n    overview_usable_answers: overview.usable ?? \"\",\n    citation_usable_answers: citations.summary?.usable ?? \"\",\n    diagnostics: overview.diagnostics ?? \"\",\n    brand_visibility_pct: fullPeriod && overview.usable ? own?.visibility ?? \"\" : \"\",\n    competitor_visibility_pct: fullPeriod && overview.usable\n      ? JSON.stringify((overview.brands ?? []).filter((brand) => !brand.own)\n        .map(({ name, visibility }) => ({ name, visibility })))\n      : \"\",\n    citation_urls: fullPeriod && citations.summary?.usable\n      ? (citations.rows ?? []).map(({ url }) => url).filter((url) => /^https?:\\/\\//i.test(url)).slice(0, 5).join(\"\\n\")\n      : \"\",\n  };\n}\nreturn $input.all().map(({ json: citations }, index) => {\n  const { config, period } = $(\"Prepare two completed weeks\").itemMatching(index).json;\n  const overview = $(\"Read visibility overview\").itemMatching(index).json;\n  if ([overview, citations].some((result) => result.meta?.resultScope !== \"saved\")) {\n    throw new Error(\"The API did not return saved results.\");\n  }\n  return { json: sheetRow(config, period, overview.data, citations.data), pairedItem: { item: index } };\n});"
+      }
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000009",
+      "name": "Append or update weekly rows",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        1540,
+        80
+      ],
+      "parameters": {
+        "operation": "appendOrUpdate",
+        "documentId": {
+          "__rl": true,
+          "value": "={{ $(\"Set project and sheet\").first().json.spreadsheetId }}",
+          "mode": "id"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "={{ $(\"Set project and sheet\").first().json.sheetName }}",
+          "mode": "name"
+        },
+        "columns": {
+          "mappingMode": "autoMapInputData",
+          "value": {},
+          "matchingColumns": [
+            "report_key"
+          ],
+          "schema": [],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {
+          "cellFormat": "RAW",
+          "handlingExtraData": "error"
+        }
+      }
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000010",
+      "name": "Setup",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        160,
+        -300
+      ],
+      "parameters": {
+        "width": 780,
+        "height": 300,
+        "content": "## Weekly AI visibility reporting\n1. Set the project ID, spreadsheet ID and tab name. Create the header row from the examples README.\n2. Select the same HTTP Header Auth credential on the three Ansvra nodes. Name: Authorization. Value: Bearer followed by your own project-scoped access key.\n3. Connect Google Sheets and run manually once. Check both date ranges, coverage and cited URLs. Run again to verify the same keys update.\n4. Enable the Monday schedule after setup. It runs at 09:00 UTC.\n\n[Ansvra API documentation](https://app.ansvra.com/documentation/customer-api) · [AI Visibility API](https://ansvra.com/product/ai-visibility-api/)"
+      }
+    }
+  ],
+  "connections": {
+    "Manual run": {
+      "main": [
+        [
+          {
+            "node": "Set project and sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Monday schedule": {
+      "main": [
+        [
+          {
+            "node": "Set project and sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set project and sheet": {
+      "main": [
+        [
+          {
+            "node": "Read Ansvra project",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read Ansvra project": {
+      "main": [
+        [
+          {
+            "node": "Prepare two completed weeks",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare two completed weeks": {
+      "main": [
+        [
+          {
+            "node": "Read visibility overview",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read visibility overview": {
+      "main": [
+        [
+          {
+            "node": "Read cited pages",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read cited pages": {
+      "main": [
+        [
+          {
+            "node": "Format weekly rows",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Format weekly rows": {
+      "main": [
+        [
+          {
+            "node": "Append or update weekly rows",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "timezone": "Etc/UTC"
+  }
+}

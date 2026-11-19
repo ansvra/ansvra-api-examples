@@ -1,0 +1,485 @@
+{
+  "info": {
+    "name": "Ansvra AI Visibility API",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "description": "Bring saved AI visibility, competitor results and citation evidence into recurring reports. Requires an active paid Ansvra account.\n\n1. In Ansvra, open Settings → Access settings → Customer data. An account Admin can create an access key with Read saved information after a recent sign-in. Restrict it to the project you need.\n2. Fork this collection. Create an unshared Postman environment, add ansvraAccessKey and set its local secret value. Keep the collection's key variable empty.\n3. List accessible projects. Set projectId to an ID you selected and use the selected project's market and language.\n4. Set all four week date variables to two complete Monday–Sunday periods in UTC. Leave them empty to use the last two completed weeks.\n5. Read both overview results and the latest week's citations. Check both periods' usable answer counts, diagnostics and resolved scope before comparing percentages. The example uses all prompt types. Null or unavailable measurements should stay blank.\n\n[AI Visibility API](https://ansvra.com/product/ai-visibility-api/) · [Customer API reference](https://app.ansvra.com/documentation/customer-api) · [What you can build](https://ansvra.com/articles/what-you-can-build-with-ai-visibility-api/)"
+  },
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{ansvraAccessKey}}",
+        "type": "string"
+      }
+    ]
+  },
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "function completedWeeks(now = new Date()) {\n  const day = 86_400_000;\n  const midnight = Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate());\n  const monday = midnight - ((now.getUTCDay() + 6) % 7) * day;\n  const date = (offset) => new Date(monday + offset * day).toISOString().slice(0, 10);\n  return [\n    { from: date(-14), to: date(-8) },\n    { from: date(-7), to: date(-1) },\n  ];\n}",
+          "const [prior, current] = completedWeeks();",
+          "for (const [key, value] of Object.entries({ priorFrom: prior.from, priorTo: prior.to, currentFrom: current.from, currentTo: current.to })) {",
+          "  if (!pm.variables.get(key)) pm.variables.set(key, value);",
+          "}"
+        ]
+      }
+    }
+  ],
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "https://app.ansvra.com/api/customer/v1",
+      "type": "string"
+    },
+    {
+      "key": "ansvraAccessKey",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "projectId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "market",
+      "value": "US",
+      "type": "string"
+    },
+    {
+      "key": "language",
+      "value": "en",
+      "type": "string"
+    },
+    {
+      "key": "priorFrom",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "priorTo",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "currentFrom",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "currentTo",
+      "value": "",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "1. List accessible projects",
+      "request": {
+        "method": "GET",
+        "url": {
+          "raw": "{{baseUrl}}/projects?",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "projects"
+          ],
+          "query": [
+            {
+              "key": "cursor",
+              "value": "",
+              "disabled": true
+            }
+          ]
+        },
+        "description": "Choose a project ID from data. If pagination.hasMore is true, enable cursor and paste pagination.nextCursor for the next page.\n\n[Endpoint reference](https://app.ansvra.com/documentation/customer-api/projects)."
+      },
+      "response": [
+        {
+          "name": "200 OK · Fictional saved response (selected fields)",
+          "originalRequest": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/projects?",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "projects"
+              ],
+              "query": [
+                {
+                  "key": "cursor",
+                  "value": "",
+                  "disabled": true
+                }
+              ]
+            },
+            "description": "Choose a project ID from data. If pagination.hasMore is true, enable cursor and paste pagination.nextCursor for the next page.\n\n[Endpoint reference](https://app.ansvra.com/documentation/customer-api/projects)."
+          },
+          "status": "OK",
+          "code": 200,
+          "_postman_previewlanguage": "json",
+          "header": [
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            }
+          ],
+          "body": "{\n  \"data\": [\n    {\n      \"id\": \"project_example\",\n      \"workspaceId\": \"workspace_example\",\n      \"name\": \"Northwind Lanterns\",\n      \"domain\": \"northwind.example\",\n      \"websiteUrl\": \"https://northwind.example/\",\n      \"market\": \"US\",\n      \"targetState\": null,\n      \"language\": \"en\",\n      \"brandAliases\": [\n        \"Northwind Lanterns\"\n      ],\n      \"domainAliases\": [],\n      \"includeSubdomains\": true,\n      \"archived\": false,\n      \"createdAt\": \"2026-10-01T09:00:00.000Z\"\n    }\n  ],\n  \"pagination\": {\n    \"hasMore\": false,\n    \"nextCursor\": null\n  },\n  \"meta\": {\n    \"requestId\": \"request_example\",\n    \"resultScope\": \"saved\"\n  }\n}"
+        }
+      ]
+    },
+    {
+      "name": "2. Read the selected project",
+      "request": {
+        "method": "GET",
+        "url": {
+          "raw": "{{baseUrl}}/projects/{{projectId}}",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "projects",
+            "{{projectId}}"
+          ],
+          "query": []
+        },
+        "description": "Copy this project's market and language into the collection variables.\n\n[Endpoint reference](https://app.ansvra.com/documentation/customer-api/project)."
+      },
+      "response": [
+        {
+          "name": "200 OK · Fictional saved response (selected fields)",
+          "originalRequest": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/projects/{{projectId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "projects",
+                "{{projectId}}"
+              ],
+              "query": []
+            },
+            "description": "Copy this project's market and language into the collection variables.\n\n[Endpoint reference](https://app.ansvra.com/documentation/customer-api/project)."
+          },
+          "status": "OK",
+          "code": 200,
+          "_postman_previewlanguage": "json",
+          "header": [
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            }
+          ],
+          "body": "{\n  \"data\": {\n    \"id\": \"project_example\",\n    \"workspaceId\": \"workspace_example\",\n    \"name\": \"Northwind Lanterns\",\n    \"domain\": \"northwind.example\",\n    \"websiteUrl\": \"https://northwind.example/\",\n    \"market\": \"US\",\n    \"targetState\": null,\n    \"language\": \"en\",\n    \"brandAliases\": [\n      \"Northwind Lanterns\"\n    ],\n    \"domainAliases\": [],\n    \"includeSubdomains\": true,\n    \"archived\": false,\n    \"createdAt\": \"2026-10-01T09:00:00.000Z\"\n  },\n  \"meta\": {\n    \"requestId\": \"request_example\",\n    \"resultScope\": \"saved\"\n  }\n}"
+        }
+      ]
+    },
+    {
+      "name": "3. Read the latest completed week",
+      "request": {
+        "method": "GET",
+        "url": {
+          "raw": "{{baseUrl}}/projects/{{projectId}}/reports/overview?from={{currentFrom}}&to={{currentTo}}&market={{market}}&language={{language}}&promptType=all",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "projects",
+            "{{projectId}}",
+            "reports",
+            "overview"
+          ],
+          "query": [
+            {
+              "key": "from",
+              "value": "{{currentFrom}}"
+            },
+            {
+              "key": "to",
+              "value": "{{currentTo}}"
+            },
+            {
+              "key": "market",
+              "value": "{{market}}"
+            },
+            {
+              "key": "language",
+              "value": "{{language}}"
+            },
+            {
+              "key": "promptType",
+              "value": "all"
+            }
+          ]
+        },
+        "description": "Read saved brand and competitor visibility alongside the usable answer count.\n\n[Endpoint reference](https://app.ansvra.com/documentation/customer-api/report-overview)."
+      },
+      "response": [
+        {
+          "name": "200 OK · Fictional saved response (selected fields)",
+          "originalRequest": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/projects/{{projectId}}/reports/overview?from={{currentFrom}}&to={{currentTo}}&market={{market}}&language={{language}}&promptType=all",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "projects",
+                "{{projectId}}",
+                "reports",
+                "overview"
+              ],
+              "query": [
+                {
+                  "key": "from",
+                  "value": "{{currentFrom}}"
+                },
+                {
+                  "key": "to",
+                  "value": "{{currentTo}}"
+                },
+                {
+                  "key": "market",
+                  "value": "{{market}}"
+                },
+                {
+                  "key": "language",
+                  "value": "{{language}}"
+                },
+                {
+                  "key": "promptType",
+                  "value": "all"
+                }
+              ]
+            },
+            "description": "Read saved brand and competitor visibility alongside the usable answer count.\n\n[Endpoint reference](https://app.ansvra.com/documentation/customer-api/report-overview)."
+          },
+          "status": "OK",
+          "code": 200,
+          "_postman_previewlanguage": "json",
+          "header": [
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            }
+          ],
+          "body": "{\n  \"data\": {\n    \"scope\": {\n      \"market\": \"US\",\n      \"language\": \"en\",\n      \"timezone\": \"UTC\",\n      \"promptType\": \"all\",\n      \"platforms\": [],\n      \"projectId\": \"project_example\",\n      \"start\": \"2026-11-09\",\n      \"end\": \"2026-11-15\",\n      \"days\": 7\n    },\n    \"usable\": 20,\n    \"diagnostics\": 0,\n    \"promptCount\": 3,\n    \"brands\": [\n      {\n        \"id\": \"own\",\n        \"own\": true,\n        \"name\": \"Northwind Lanterns\",\n        \"usable\": 20,\n        \"visibility\": 40\n      },\n      {\n        \"id\": \"competitor_example\",\n        \"own\": false,\n        \"name\": \"Trailhead Lamps\",\n        \"usable\": 20,\n        \"visibility\": 25\n      }\n    ]\n  },\n  \"meta\": {\n    \"requestId\": \"request_example\",\n    \"resultScope\": \"saved\"\n  }\n}"
+        }
+      ]
+    },
+    {
+      "name": "4. Read cited pages for the latest week",
+      "request": {
+        "method": "GET",
+        "url": {
+          "raw": "{{baseUrl}}/projects/{{projectId}}/reports/citations?from={{currentFrom}}&to={{currentTo}}&market={{market}}&language={{language}}&promptType=all&view=pages&page=1",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "projects",
+            "{{projectId}}",
+            "reports",
+            "citations"
+          ],
+          "query": [
+            {
+              "key": "from",
+              "value": "{{currentFrom}}"
+            },
+            {
+              "key": "to",
+              "value": "{{currentTo}}"
+            },
+            {
+              "key": "market",
+              "value": "{{market}}"
+            },
+            {
+              "key": "language",
+              "value": "{{language}}"
+            },
+            {
+              "key": "promptType",
+              "value": "all"
+            },
+            {
+              "key": "view",
+              "value": "pages"
+            },
+            {
+              "key": "page",
+              "value": "1"
+            }
+          ]
+        },
+        "description": "Inspect the cited page URLs and response counts. Use the page number for subsequent pages.\n\n[Endpoint reference](https://app.ansvra.com/documentation/customer-api/report-citations)."
+      },
+      "response": [
+        {
+          "name": "200 OK · Fictional saved response (selected fields)",
+          "originalRequest": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/projects/{{projectId}}/reports/citations?from={{currentFrom}}&to={{currentTo}}&market={{market}}&language={{language}}&promptType=all&view=pages&page=1",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "projects",
+                "{{projectId}}",
+                "reports",
+                "citations"
+              ],
+              "query": [
+                {
+                  "key": "from",
+                  "value": "{{currentFrom}}"
+                },
+                {
+                  "key": "to",
+                  "value": "{{currentTo}}"
+                },
+                {
+                  "key": "market",
+                  "value": "{{market}}"
+                },
+                {
+                  "key": "language",
+                  "value": "{{language}}"
+                },
+                {
+                  "key": "promptType",
+                  "value": "all"
+                },
+                {
+                  "key": "view",
+                  "value": "pages"
+                },
+                {
+                  "key": "page",
+                  "value": "1"
+                }
+              ]
+            },
+            "description": "Inspect the cited page URLs and response counts. Use the page number for subsequent pages.\n\n[Endpoint reference](https://app.ansvra.com/documentation/customer-api/report-citations)."
+          },
+          "status": "OK",
+          "code": 200,
+          "_postman_previewlanguage": "json",
+          "header": [
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            }
+          ],
+          "body": "{\n  \"data\": {\n    \"scope\": {\n      \"market\": \"US\",\n      \"language\": \"en\",\n      \"timezone\": \"UTC\",\n      \"promptType\": \"all\",\n      \"platforms\": [],\n      \"from\": \"2026-11-09\",\n      \"to\": \"2026-11-15\",\n      \"view\": \"pages\",\n      \"page\": 1\n    },\n    \"summary\": {\n      \"usable\": 20,\n      \"occurrences\": 3,\n      \"urls\": 1,\n      \"domains\": 1\n    },\n    \"total\": 1,\n    \"page\": 1,\n    \"pageSize\": 50,\n    \"rows\": [\n      {\n        \"key\": \"guide.example/lanterns\",\n        \"url\": \"https://guide.example/lanterns\",\n        \"domain\": \"guide.example\",\n        \"title\": \"Choosing a lantern\",\n        \"count\": 3,\n        \"ownership\": \"other\"\n      }\n    ]\n  },\n  \"meta\": {\n    \"requestId\": \"request_example\",\n    \"resultScope\": \"saved\"\n  }\n}"
+        }
+      ]
+    },
+    {
+      "name": "5. Read the previous completed week",
+      "request": {
+        "method": "GET",
+        "url": {
+          "raw": "{{baseUrl}}/projects/{{projectId}}/reports/overview?from={{priorFrom}}&to={{priorTo}}&market={{market}}&language={{language}}&promptType=all",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "projects",
+            "{{projectId}}",
+            "reports",
+            "overview"
+          ],
+          "query": [
+            {
+              "key": "from",
+              "value": "{{priorFrom}}"
+            },
+            {
+              "key": "to",
+              "value": "{{priorTo}}"
+            },
+            {
+              "key": "market",
+              "value": "{{market}}"
+            },
+            {
+              "key": "language",
+              "value": "{{language}}"
+            },
+            {
+              "key": "promptType",
+              "value": "all"
+            }
+          ]
+        },
+        "description": "Compare the two periods only after checking the resolved reporting scope and usable answers.\n\n[Endpoint reference](https://app.ansvra.com/documentation/customer-api/report-overview)."
+      },
+      "response": [
+        {
+          "name": "200 OK · Fictional saved response (selected fields)",
+          "originalRequest": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/projects/{{projectId}}/reports/overview?from={{priorFrom}}&to={{priorTo}}&market={{market}}&language={{language}}&promptType=all",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "projects",
+                "{{projectId}}",
+                "reports",
+                "overview"
+              ],
+              "query": [
+                {
+                  "key": "from",
+                  "value": "{{priorFrom}}"
+                },
+                {
+                  "key": "to",
+                  "value": "{{priorTo}}"
+                },
+                {
+                  "key": "market",
+                  "value": "{{market}}"
+                },
+                {
+                  "key": "language",
+                  "value": "{{language}}"
+                },
+                {
+                  "key": "promptType",
+                  "value": "all"
+                }
+              ]
+            },
+            "description": "Compare the two periods only after checking the resolved reporting scope and usable answers.\n\n[Endpoint reference](https://app.ansvra.com/documentation/customer-api/report-overview)."
+          },
+          "status": "OK",
+          "code": 200,
+          "_postman_previewlanguage": "json",
+          "header": [
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            }
+          ],
+          "body": "{\n  \"data\": {\n    \"scope\": {\n      \"market\": \"US\",\n      \"language\": \"en\",\n      \"timezone\": \"UTC\",\n      \"promptType\": \"all\",\n      \"platforms\": [],\n      \"projectId\": \"project_example\",\n      \"start\": \"2026-11-02\",\n      \"end\": \"2026-11-08\",\n      \"days\": 7\n    },\n    \"usable\": 12,\n    \"diagnostics\": 0,\n    \"promptCount\": 3,\n    \"brands\": [\n      {\n        \"id\": \"own\",\n        \"own\": true,\n        \"name\": \"Northwind Lanterns\",\n        \"usable\": 12,\n        \"visibility\": 25\n      },\n      {\n        \"id\": \"competitor_example\",\n        \"own\": false,\n        \"name\": \"Trailhead Lamps\",\n        \"usable\": 12,\n        \"visibility\": 25\n      }\n    ]\n  },\n  \"meta\": {\n    \"requestId\": \"request_example\",\n    \"resultScope\": \"saved\"\n  }\n}"
+        }
+      ]
+    }
+  ]
+}

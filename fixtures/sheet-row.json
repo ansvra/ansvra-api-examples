@@ -1,0 +1,16 @@
+{
+  "report_key": "[\"project_example\",\"US\",\"en\",[],\"all\",\"2026-11-09\"]",
+  "project_id": "project_example",
+  "week_from_utc": "2026-11-09",
+  "week_to_utc": "2026-11-15",
+  "market": "US",
+  "language": "en",
+  "platforms": "all",
+  "coverage": "Usable answers available",
+  "overview_usable_answers": 20,
+  "citation_usable_answers": 20,
+  "diagnostics": 0,
+  "brand_visibility_pct": 40,
+  "competitor_visibility_pct": "[{\"name\":\"Trailhead Lamps\",\"visibility\":25}]",
+  "citation_urls": "https://guide.example/lanterns"
+}

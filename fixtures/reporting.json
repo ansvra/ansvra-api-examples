@@ -1,0 +1,197 @@
+{
+  "projectList": {
+    "data": [
+      {
+        "id": "project_example",
+        "workspaceId": "workspace_example",
+        "name": "Northwind Lanterns",
+        "domain": "northwind.example",
+        "websiteUrl": "https://northwind.example/",
+        "market": "US",
+        "targetState": null,
+        "language": "en",
+        "brandAliases": [
+          "Northwind Lanterns"
+        ],
+        "domainAliases": [],
+        "includeSubdomains": true,
+        "archived": false,
+        "createdAt": "2026-10-01T09:00:00.000Z"
+      }
+    ],
+    "pagination": {
+      "hasMore": false,
+      "nextCursor": null
+    },
+    "meta": {
+      "requestId": "request_example",
+      "resultScope": "saved"
+    }
+  },
+  "project": {
+    "data": {
+      "id": "project_example",
+      "workspaceId": "workspace_example",
+      "name": "Northwind Lanterns",
+      "domain": "northwind.example",
+      "websiteUrl": "https://northwind.example/",
+      "market": "US",
+      "targetState": null,
+      "language": "en",
+      "brandAliases": [
+        "Northwind Lanterns"
+      ],
+      "domainAliases": [],
+      "includeSubdomains": true,
+      "archived": false,
+      "createdAt": "2026-10-01T09:00:00.000Z"
+    },
+    "meta": {
+      "requestId": "request_example",
+      "resultScope": "saved"
+    }
+  },
+  "currentOverview": {
+    "data": {
+      "scope": {
+        "market": "US",
+        "language": "en",
+        "timezone": "UTC",
+        "promptType": "all",
+        "platforms": [],
+        "projectId": "project_example",
+        "start": "2026-11-09",
+        "end": "2026-11-15",
+        "days": 7
+      },
+      "usable": 20,
+      "diagnostics": 0,
+      "promptCount": 3,
+      "brands": [
+        {
+          "id": "own",
+          "own": true,
+          "name": "Northwind Lanterns",
+          "usable": 20,
+          "visibility": 40
+        },
+        {
+          "id": "competitor_example",
+          "own": false,
+          "name": "Trailhead Lamps",
+          "usable": 20,
+          "visibility": 25
+        }
+      ]
+    },
+    "meta": {
+      "requestId": "request_example",
+      "resultScope": "saved"
+    }
+  },
+  "priorOverview": {
+    "data": {
+      "scope": {
+        "market": "US",
+        "language": "en",
+        "timezone": "UTC",
+        "promptType": "all",
+        "platforms": [],
+        "projectId": "project_example",
+        "start": "2026-11-02",
+        "end": "2026-11-08",
+        "days": 7
+      },
+      "usable": 12,
+      "diagnostics": 0,
+      "promptCount": 3,
+      "brands": [
+        {
+          "id": "own",
+          "own": true,
+          "name": "Northwind Lanterns",
+          "usable": 12,
+          "visibility": 25
+        },
+        {
+          "id": "competitor_example",
+          "own": false,
+          "name": "Trailhead Lamps",
+          "usable": 12,
+          "visibility": 25
+        }
+      ]
+    },
+    "meta": {
+      "requestId": "request_example",
+      "resultScope": "saved"
+    }
+  },
+  "citations": {
+    "data": {
+      "scope": {
+        "market": "US",
+        "language": "en",
+        "timezone": "UTC",
+        "promptType": "all",
+        "platforms": [],
+        "from": "2026-11-09",
+        "to": "2026-11-15",
+        "view": "pages",
+        "page": 1
+      },
+      "summary": {
+        "usable": 20,
+        "occurrences": 3,
+        "urls": 1,
+        "domains": 1
+      },
+      "total": 1,
+      "page": 1,
+      "pageSize": 50,
+      "rows": [
+        {
+          "key": "guide.example/lanterns",
+          "url": "https://guide.example/lanterns",
+          "domain": "guide.example",
+          "title": "Choosing a lantern",
+          "count": 3,
+          "ownership": "other"
+        }
+      ]
+    },
+    "meta": {
+      "requestId": "request_example",
+      "resultScope": "saved"
+    }
+  },
+  "priorCitations": {
+    "data": {
+      "scope": {
+        "market": "US",
+        "language": "en",
+        "timezone": "UTC",
+        "promptType": "all",
+        "platforms": [],
+        "from": "2026-11-02",
+        "to": "2026-11-08",
+        "view": "pages",
+        "page": 1
+      },
+      "summary": {
+        "usable": 12,
+        "occurrences": 0,
+        "urls": 0,
+        "domains": 0
+      },
+      "total": 0,
+      "page": 1,
+      "pageSize": 50,
+      "rows": []
+    },
+    "meta": {
+      "requestId": "request_example",
+      "resultScope": "saved"
+    }
+  }
+}
