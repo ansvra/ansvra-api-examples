@@ -195,6 +195,38 @@
         "height": 300,
         "content": "## Weekly AI visibility reporting\n1. Set the project ID, spreadsheet ID and tab name. Create the header row from the examples README.\n2. Select the same HTTP Header Auth credential on the three Ansvra nodes. Name: Authorization. Value: Bearer followed by your own project-scoped access key.\n3. Connect Google Sheets and run manually once. Check both date ranges, coverage and cited URLs. Run again to verify the same keys update.\n4. Enable the Monday schedule after setup. It runs at 09:00 UTC.\n\n[Ansvra API documentation](https://app.ansvra.com/documentation/customer-api) · [AI Visibility API](https://ansvra.com/product/ai-visibility-api/)"
       }
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000011",
+      "name": "Reporting scope",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        405,
+        280
+      ],
+      "parameters": {
+        "width": 660,
+        "height": 220,
+        "color": 5,
+        "content": "## Read two completed weeks\nThe project supplies the market and language. Both weeks use matching filters, Monday–Sunday dates in UTC, and all prompt types. The token only needs access to saved information in the selected project.\n\nThe two reports have separate usable answer counts. The workflow flags a mismatch so you can inspect coverage before comparing weeks."
+      }
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000012",
+      "name": "Coverage and row updates",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        1100,
+        280
+      ],
+      "parameters": {
+        "width": 650,
+        "height": 220,
+        "color": 4,
+        "content": "## Check coverage and update the sheet\nCheck the coverage label and usable answer counts before reporting a change. An unavailable value stays blank and a measured zero stays zero. The first citation page supplies up to five supporting URLs.\n\nThe report key includes project, filters, and week start. A run for the same week and reporting scope updates its existing row."
+      }
     }
   ],
   "connections": {

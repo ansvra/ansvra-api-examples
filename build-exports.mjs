@@ -195,6 +195,20 @@ node("Setup", "stickyNote", 1, [160, -300], {
 
 [Ansvra API documentation](${docs}) · [AI Visibility API](${landing})`,
 });
+node("Reporting scope", "stickyNote", 1, [405, 280], {
+  width: 660, height: 220, color: 5,
+  content: `## Read two completed weeks
+The project supplies the market and language. Both weeks use matching filters, Monday–Sunday dates in UTC, and all prompt types. The token only needs access to saved information in the selected project.
+
+The two reports have separate usable answer counts. The workflow flags a mismatch so you can inspect coverage before comparing weeks.`,
+});
+node("Coverage and row updates", "stickyNote", 1, [1100, 280], {
+  width: 650, height: 220, color: 4,
+  content: `## Check coverage and update the sheet
+Check the coverage label and usable answer counts before reporting a change. An unavailable value stays blank and a measured zero stays zero. The first citation page supplies up to five supporting URLs.
+
+The report key includes project, filters, and week start. A run for the same week and reporting scope updates its existing row.`,
+});
 link("Manual run", "Set project and sheet");
 link("Monday schedule", "Set project and sheet");
 for (let index = 2; index < 8; index++) link(nodes[index].name, nodes[index + 1].name);
